@@ -5,6 +5,7 @@ part 'form_store.g.dart';
 class FormStore = _FormStore with _$FormStore;
 
 abstract class _FormStore with Store{
+  late List<ReactionDisposer> _disposers;
   final FormErrorState error = FormErrorState();
   @observable
   String name='';
@@ -29,6 +30,12 @@ abstract class _FormStore with Store{
   void setPassword(String value){
     password = value;
   }
+
+  @computed
+  bool get isUserCheckPending => _usernameCheck.status == FutureStatus.pending;
+
+  @computed
+  bool get canLogin => !error.hasErrors;
 
   @observable
   ObservableFuture<bool> _usernameCheck = ObservableFuture.value(false);
@@ -67,6 +74,27 @@ abstract class _FormStore with Store{
   @action
   void validateEmail(String email){
     error.email = isEmail(email) ? null : 'Cannot be blank';
+  }
+
+  void setUpValidators(){
+    _disposers = [
+      reaction((_) => name,validateUserName),
+      reaction((_) => email,validateEmail),
+      reaction((_) => password,validatePassword)
+
+    ];
+  }
+
+  void dispose(){
+    for(final d in _disposers){
+      d();
+    }
+  }
+
+  void validateAll(){
+    validateEmail(name);
+    validateEmail(password);
+    validateEmail(email);
   }
 }
 
